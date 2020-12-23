@@ -14,8 +14,8 @@ spec:
     spec:
       containers:
       - name: xrootd-client-pod
-        image: ddavila0/xrootd-client:latest
-        ports:
+        image: ddavila0/xrootd-scale-tests-client:latest
+        imagePullPolicy: Always
         resources:
           limits:
             cpu: 1

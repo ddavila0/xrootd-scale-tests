@@ -10,5 +10,5 @@ RUN yum install python3 -y
 
 RUN pip3 install pika python-dotenv
 
-ADD vimrc /root/.vimrc
-ADD ../utils /utils
+ADD docker/vimrc /root/.vimrc
+ADD utils /utils
