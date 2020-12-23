@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xrootd-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xrootd-client
+  template:
+    metadata:
+      labels:
+        app: xrootd-client
+    spec:
+      containers:
+      - name: xrootd-client-pod
+        image: ddavila0/xrootd-client:latest
+        ports:
+        resources:
+          limits:
+            cpu: 1
+            memory: 5Gi
+          requests:
+            cpu: 1
+            memory: 2Gi
+        command: ["sh", "-c", "sleep infinity"]
+      restartPolicy: Always
