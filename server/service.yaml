@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: xrootd-server-service
+  labels:
+    app: xrootd-server
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: xrootd-monitoring.ssl-hep.org
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 9618
+      protocol: TCP
+      targetPort: 9618
+      name: xrootd
+  selector:
+    app: xrootd-server

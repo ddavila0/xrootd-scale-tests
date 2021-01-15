@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xrootd-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xrootd-server
+  template:
+    metadata:
+      labels:
+        app: xrootd-server
+    spec:
+      containers:
+      - name: mypod
+        image: opensciencegrid/xrootd-standalone:fresh
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "head -c 1M /dev/urandom >/data/test_file_1MB"]
+        ports:
+         - containerPort: 1094
+           #hostPort: 1094
+        volumeMounts:
+        - name: source-data
+          mountPath: /data
+        - name: auth-file
+          mountPath: /etc/xrootd/auth-file-noauth
+          subPath: auth-file-noauth
+        - name: xrootd-config
+          mountPath: /etc/xrootd/xrootd-standalone.cfg
+          subPath: xrootd-standalone.cfg
+        resources:
+          limits:
+            cpu: 1
+            memory: 10Gi
+          requests:
+            cpu: 1
+            memory: 5Gi
+      restartPolicy: Always
+      volumes:
+      - name: source-data
+        emptyDir: {}
+      - name : auth-file
+        configMap:
+           defaultMode: 420
+           items:
+           - key: auth-file-noauth
+             path: auth-file-noauth
+           name: xrootd-config
+      - name : xrootd-config
+        configMap:
+           defaultMode: 420
+           items:
+           - key: xrootd-standalone.cfg
+             path: xrootd-standalone.cfg
+           name: xrootd-config
