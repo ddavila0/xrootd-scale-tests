@@ -5,27 +5,19 @@ import json
 from datetime import datetime
 import time
 
-class ValidationClient:
+class RabbitClient:
 
-    def __init__(self, queue, num_messages, remove, timeout, outfile):
+    def __init__(self, queue, timeout):
         self.queue = queue
-        self.receivedMsgs = 0
-        self.targetMsgs = num_messages
-        self.remove = remove
         self.timeout = timeout
-        self.outfile = outfile
+        self.receivedMsgs = 0
         self.timer_id = 0
         self.last_messages = 0
         self.my_dict = {}
+        self.method = None 
+        self.targetMsgs = None
+        self.remove = None
     
-    
-    def print_dictionary(self):
-        #for key in sorted(self.my_dict):
-        #    print(f'{key:20} : '+ str(self.my_dict[key]))
-        if self.outfile:
-            with open(self.outfile, 'w') as outfile:
-                json.dump(self.my_dict, outfile)
-
     def push_in_dict(self, body):
         json_dict = json.loads(body)
         crab_id = file_lfn = ""
@@ -40,7 +32,11 @@ class ValidationClient:
         if "read_bytes" in json_dict:
             read_bytes = int(json_dict["read_bytes"])
 
-        self.my_dict[crab_id]=[file_lfn, read_bytes]
+        if "server_host" in json_dict:
+            server_host = json_dict["server_host"]
+
+        self.my_dict[crab_id]={"server": server_host, "filename":file_lfn, "read_bytes":read_bytes}
+        #self.my_dict[crab_id]=[file_lfn, read_bytes, server_host]
 
     def pretty_print(self, body, index):
         json_dict = json.loads(body)
@@ -58,15 +54,20 @@ class ValidationClient:
 
     def recvMsg(self, channel: pika.channel, method, properties, body):
         #self.pretty_print(body, self.receivedMsgs)
+        #print(body)
+        #print(json.dumps(str(body), sort_keys=False, indent=4))
+        self.method  = method
         self.push_in_dict(body)
         self.receivedMsgs += 1
-        if self.receivedMsgs == self.targetMsgs:
+    
+        # When targetMsgs == 0 we assume that we want all the messages in the queue
+        if self.targetMsgs > 0 and self.receivedMsgs == self.targetMsgs:
             if self.remove:
                 channel.basic_ack(method.delivery_tag, multiple=True)
             else:
                 channel.basic_nack(method.delivery_tag, multiple=True, requeue=True)
             channel.stop_consuming()
-            self.print_dictionary() 
+
     def createConnection(self):
         # Load the credentials into pika
         if 'RABBIT_URL' not in os.environ:
@@ -86,25 +87,29 @@ class ValidationClient:
         Called every X seconds to check the status of the transfer.
         If nothing has happened lately, then kill the connection.
         """
-        # ddavila stop after 1 sec
-        #self.channel.stop_consuming()
         if self.last_messages == self.receivedMsgs:
-            #print("Time is out") 
+            if self.last_messages > 0:
+                if self.remove:
+                    self.channel.basic_ack(self.method.delivery_tag, multiple=True)
+                else:
+                    self.channel.basic_nack(self.method.delivery_tag, multiple=True, requeue=True)
             self.channel.stop_consuming()
-            self.print_dictionary() 
         else:
             self.last_messages = self.receivedMsgs
             self.timer_id = self.conn.call_later(self.timeout, self._checkStatus)
 
-    def start_br(self):
-        self.createConnection()
+    def clean_queue(self):
+        self.targetMsgs = 0
+        self.remove = True
+        self.start()
 
-        # Create a timeout
-        self.timer_id = self.conn.call_later(self.timeout, self._checkStatus)
+        return self.my_dict, self.receivedMsgs
 
-        self.channel.start_consuming()
-        self.conn.close()
-        
+    def get_messages(self, num_messages, remove):
+        self.targetMsgs = num_messages
+        self.remove = remove
+        self.start()
+
         return self.my_dict, self.receivedMsgs
 
     def start(self):
@@ -115,4 +120,9 @@ class ValidationClient:
 
         self.channel.start_consuming()
         self.conn.close()
-        return self.receivedMsgs
+        self.receivedMsgs = 0
+        self.timer_id = 0
+
+        
+
+

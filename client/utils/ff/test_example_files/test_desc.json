@@ -1,0 +1,12 @@
+{
+    "test_type"     : "ff",
+    "repetition_id" : "1",
+    "tests":[
+        {
+            "test_id"           : "100",
+            "num_servers"       : "8",
+            "num_files"         : "100",
+            "files_per_second"  : "20" 
+        }   
+     ]
+}
