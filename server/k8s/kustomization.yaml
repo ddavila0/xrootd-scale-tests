@@ -1,6 +1,5 @@
 resources:
   - deployment.yaml
-  #- service.yaml
 
 configMapGenerator:
   - name: xrootd-config
