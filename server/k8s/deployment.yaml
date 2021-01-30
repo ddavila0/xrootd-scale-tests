@@ -14,14 +14,14 @@ spec:
     spec:
       containers:
       - name: mypod
-        image: opensciencegrid/xrootd-standalone:fresh
+        image: ddavila0/xrootd-scale-tests-server:latest
         lifecycle:
           postStart:
             exec:
-              command: ["/bin/sh", "-c", "head -c 1M /dev/urandom >/data/test_file_1MB"]
+              command: ["/bin/sh", "-c", "mkdir -p /data/store/; head -c 1K /dev/urandom >/data/store/1KB_01; head -c 1K /dev/urandom >/data/store/1KB_02; head -c 1K /dev/urandom >/data/store/1KB_03"]
         ports:
          - containerPort: 1094
-           #hostPort: 1094
+           hostPort: 1094
         volumeMounts:
         - name: source-data
           mountPath: /data
