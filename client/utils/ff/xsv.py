@@ -12,9 +12,9 @@ import logging
 import random
 import pdb
 import pika
+import socket
 
 def request_file(server, filename, appinfo):
-    #pdb.set_trace()
     byte_array, status = server.fetch_full_file(filename, appinfo)
     if status == -1:
         log.error("Cannot open file: "+ filename +" at server: "+server.get_hostname())
@@ -87,7 +87,7 @@ def main():
     formatter = logging.Formatter('%(asctime)s  %(levelname)s - %(message)s', datefmt='%Y%m%d %H:%M:%S')
     hdlr.setFormatter(formatter)
     log.addHandler(hdlr)
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.INFO)
     #---------------------------------------------------------
     # Rabbit Config
     #---------------------------------------------------------
@@ -109,8 +109,8 @@ def main():
     fd = open(args.servers_list)
     lines = fd.readlines()
     for line in lines:
-        ip       = line.split()[0]
-        hostname = line.split()[1]
+        hostname = line[:-1]
+        ip = socket.gethostbyname(hostname)
         s = Server(hostname, ip)
         servers.append(s)
     fd.close()
@@ -132,7 +132,7 @@ def main():
     # Create dir if to store test results
     if not os.path.exists(tests_dir):
         os.makedirs(tests_dir)
-    
+
     log.debug("tests directory: "+tests_dir)
    
     # Remove the rabbit queue before starting:
@@ -148,6 +148,15 @@ def main():
         test_id_s           = f'{test_id:02}'
         file_out_base       = test_name+"_" + test_id_s 
  
+        log.info("=========== Starting ============") 
+        log.info("running test: "     + file_out_base)
+        log.info("=================================") 
+        
+        # Do we have enough servers in the list?
+        if total_servers > len(servers):
+            log.warning("not enough servers for this test. Required: %d, Available on the list: %d. Skipping test...", total_servers, len(servers))
+            continue
+ 
         # Configure the test
         # Name of the file that will have the info of what was requested
         file_out_req = file_out_base+"_req.json"
@@ -157,17 +166,15 @@ def main():
         
         # Configure Rabbit
         # Name of the file that will have the info of what was recorded
-        file_out_rec = file_out_base+"_rec.txt"
+        file_out_rec = file_out_base+"_rec.json"
         num_messages_expected = total_files * total_servers
         log.info("messages expected: "+str(num_messages_expected)) 
         
         if not args.skip_req:
             # Run test
-            log.info("running test: "     + test_name)
             log.info("total servers: "    + str(total_servers))
             log.info("total files: "      + str(total_files))
             log.info("files per second: " + str(files_per_second))
-            log.info("file_base: "        + file_out_base)
 
             dict_req = run_test(servers[:total_servers], test_id, num_rounds, num_workers, files)
             write_dict(dict_req, tests_dir+"/"+file_out_req)
@@ -176,7 +183,7 @@ def main():
  
             if not args.skip_validation:
                 # Wait for the data to be sent to the message bus
-                log.info("Sleeping...")
+                log.info("Waiting for the queue to get filled up...")
                 time.sleep(60)
 
         if not args.skip_validation:

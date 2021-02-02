@@ -101,16 +101,16 @@ class RabbitClient:
     def clean_queue(self):
         self.targetMsgs = 0
         self.remove = True
-        self.start()
+        num_received_messages = self.start()
 
-        return self.my_dict, self.receivedMsgs
+        return self.my_dict, num_received_messages
 
     def get_messages(self, num_messages, remove):
         self.targetMsgs = num_messages
         self.remove = remove
-        self.start()
+        num_received_messages = self.start()
 
-        return self.my_dict, self.receivedMsgs
+        return self.my_dict, num_received_messages 
 
     def start(self):
         self.createConnection()
@@ -120,8 +120,14 @@ class RabbitClient:
 
         self.channel.start_consuming()
         self.conn.close()
+        # Save value to be returned before reseting the counter
+        num_received_messages = self.receivedMsgs
+        
+        # Reset counters
         self.receivedMsgs = 0
         self.timer_id = 0
+        
+        return num_received_messages
 
         
 
