@@ -188,6 +188,11 @@ def main():
 
         if not args.skip_validation:
             dict_rec, num_messages_received = rabbit_q.get_messages(0, remove_q)
+
+            # Swap IPs by hostnames in the dict_rec
+            insert_hostnames(dict_rec, servers)
+
+            # Write recorded dictionary to json file
             write_dict(dict_rec, tests_dir+"/"+file_out_rec)
             
             if num_messages_expected != num_messages_received:
@@ -196,9 +201,7 @@ def main():
                     sys.exit(0)
                 else:
                     log.warning("number of mesages received(%d) <  expected(%d)", num_messages_received, num_messages_expected)
-            # Swap IPs by hostnames in the dict_rec 
-            insert_hostnames(dict_rec, servers) 
-    
+
             log.debug("Recorded dictionary")
             log.debug(json.dumps(dict_rec, sort_keys=False, indent=4))
     
