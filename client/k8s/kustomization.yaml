@@ -1,5 +1,16 @@
 resources:
   - deployment.yaml
+  - rabbit-secret.yaml
 
 commonLabels:
   app: xrootd-client
+
+configMapGenerator:
+  - name: test-files
+    files:
+      - file-list
+      - server-list
+      - xsvm.py
+      - RabbitClient.py
+      - Server.py
+

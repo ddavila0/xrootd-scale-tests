@@ -15,7 +15,16 @@ spec:
       containers:
       - name: xrootd-client-pod
         image: ddavila0/xrootd-scale-tests-client:latest
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
+        env:
+          - name: RABBIT_URL
+            valueFrom:
+              secretKeyRef:
+                name: rabbit-secret
+                key: rabbit-url
+        volumeMounts:
+        - name: test-files
+          mountPath: /tests/
         resources:
           limits:
             cpu: 1
@@ -24,4 +33,22 @@ spec:
             cpu: 1
             memory: 2Gi
         command: ["sh", "-c", "sleep infinity"]
+      volumes:
+      - name : test-files
+        projected:
+          sources:
+          - configMap:
+             name: test-files
+             items:
+               - key: server-list
+                 path: server-list
+               - key: file-list
+                 path: file-list
+               - key: RabbitClient.py
+                 path: RabbitClient.py
+               - key: Server.py
+                 path: Server.py
+               - key: xsvm.py
+                 path: xsvm.py
+                 mode: 0555
       restartPolicy: Always

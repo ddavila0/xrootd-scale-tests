@@ -15,7 +15,7 @@ spec:
       containers:
       - name: mypod
         image: ddavila0/xrootd-scale-tests-server:fresh
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
         #lifecycle:
         #  postStart:
         #    exec:
@@ -32,11 +32,11 @@ spec:
           subPath: xrootd-standalone.cfg
         resources:
           limits:
-            cpu: 1
-            memory: 10Gi
+            cpu: 16
+            memory: 32Gi
           requests:
-            cpu: 1
-            memory: 5Gi
+            cpu: 16
+            memory: 32Gi
       restartPolicy: Always
       volumes:
       - name : auth-file
